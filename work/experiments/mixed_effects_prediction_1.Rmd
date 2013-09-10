@@ -1,0 +1,65 @@
+Mixed Effects Prediction 1
+==========================
+
+```{r}
+opts_chunk$set(fig.align="center", tidy=FALSE)
+library(lme4)
+library(ggplot2)
+library(plyr)
+
+source ("../../R/read_data.R")
+```
+
+Read in data.
+
+```{r}
+data <- ReadData("../../data/fvc.5.visits.csv")
+
+train <- subset(data, year < 1.5)
+mem.fit <- lmer(fvc ~ year + (1 + year|PtID), data = train)
+print(mem.fit)
+```
+
+Check the residuals for the train set.
+
+```{r}
+train$resid <- resid(mem.fit)
+p <- ggplot(train, aes(x = year, y = resid / fvc.sd))
+p + geom_point(alpha = 0.4) + geom_smooth()
+```
+
+Predict new FVC measurements using the fit model.
+
+```{r}
+patient.coef <- coef(mem.fit)$PtID
+names(patient.coef) <- c("intercept", "slope")
+patient.coef$PtID <- rownames(patient.coef)
+
+test <- merge(subset(data, year >= 1.5), patient.coef, by = "PtID")
+
+test$fvc.hat <- with(test, {
+    intercept + slope * year
+})
+
+test$resid <- test$fvc.hat - test$fvc
+mean(test$resid ** 2)
+```
+
+```{r}
+p <- ggplot(test, aes(x = year, y = resid / fvc.sd))
+p + geom_point(alpha = 0.2) + geom_smooth()
+```
+
+Examine the patients whose mean squared error is largest.
+
+```{r}
+source("../../R/plot_results.R")
+PlotExtremes(data, test, extreme = "high", k = 5)
+```
+
+Examine the patients whose mean squared error is smallest.
+
+```{r}
+PlotExtremes(data, test, extreme = "low", k = 5)
+```
+

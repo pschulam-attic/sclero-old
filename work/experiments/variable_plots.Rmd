@@ -1,0 +1,87 @@
+Variable Plots
+==============
+
+```{r echo=FALSE}
+opts_chunk$set(fig.align = "center")
+```
+
+```{r}
+library(ggplot2)
+library(plyr)
+library(reshape2)
+source("../../R/read_data.R")
+
+data <- ReadData("../../data/fvc.5.visits.csv")
+```
+
+What is the distribution over FVC and DLCO.
+
+```{r}
+p <- ggplot(data, aes(x = year, y = fvc))
+p + geom_point(alpha = 0.1)
+
+p <- ggplot(data, aes(x = year, y = dlco))
+p + geom_point(alpha = 0.1)
+```
+
+How do FVC and DLCO vary together. It's interesting that they correlations are not always close to 1 for every patient.
+
+```{r}
+data.summary <- ddply(data, .(PtID), summarize,
+                      fvc.dlco.cov = cov(fvc, dlco),
+                      fvc.dlco.cor = cor(fvc, dlco))
+
+p <- ggplot(data.summary, aes(x = fvc.dlco.cor))
+p + geom_histogram()
+
+```
+
+Examine some of the patients where FVC and DLCO are not correlated.
+
+```{r}
+pids <- arrange(data.summary, fvc.dlco.cor)$PtID[1:5]
+patient.data <- subset(data, PtID %in% pids, select = c(PtID, year, fvc, dlco))
+patient.data <- melt(patient.data, measure.vars = c("fvc", "dlco"))
+
+p <- ggplot(patient.data,
+            aes(x = year,
+                y = value,
+                group = interaction(PtID, variable),
+                color = factor(PtID)))
+p + geom_line()
+```
+
+How does FVC change when interacting with antibodies.
+
+```{r}
+p <- ggplot(data, aes(x = fvc, fill = interaction(aca, topo, rnp, pol3)))
+p + geom_density(alpha = 0.2)
+```
+
+What is the distribution over FVC when conditioning on the number of
+visits that a patient has.
+
+```{r}
+df <- ddply(data, .(PtID), transform, num.visits = length(fvc))
+p <- ggplot(df, aes(x = factor(num.visits), y = fvc))
+p + geom_boxplot()
+```
+
+What is the best way to characterize a patient's overall FVC level?
+First, we'll try to take the top 10% of the data for each patient and
+report the median of that subset.
+
+```{r}
+df <- ddply(data, .(PtID), summarize, x = median(fvc[fvc > quantile(fvc, 0.9)]))
+qplot(x, data=df)
+```
+
+Can we use this statistic to see how well FVC and DLCO correlate?
+
+```{r}
+ComputeQuantMedian <- function(x) median(x[x > quantile(x, 0.9)])
+df <- ddply(data, .(PtID), summarize,
+            fvc.s = ComputeQuantMedian(fvc),
+            dlco.s = ComputeQuantMedian(dlco))
+qplot(scale(fvc.s), scale(dlco.s), data = df)
+```

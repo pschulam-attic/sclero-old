@@ -1,0 +1,75 @@
+Mixed Effects Prediction 3
+==========================
+
+```{r}
+opts_chunk$set(fig.align="center", tidy=FALSE)
+library(lme4)
+library(ggplot2)
+library(plyr)
+
+source("../../R/read_data.R")
+source("../../R/plot_results.R")
+
+data <- ReadData("../../data/fvc.5.visits.csv")
+```
+
+Fit the mixed effects model using gender, race, and antibody info.
+
+```{r}
+train <- subset(data, year < 1.5)
+mem.fit <- lmer(fvc ~ year + strFemale + strRaceId1 + aca + topo + rnp + pol3 + (1 + year|PtID),
+                data = train)
+print(mem.fit)
+```
+
+Check residuals for train data.
+
+```{r}
+train$resid <- resid(mem.fit)
+p <- ggplot(train, aes(x = year, y = resid))
+p + geom_point(alpha = 0.3) + geom_smooth()
+```
+
+Predict the remaining measurements using the model.
+
+```{r}
+patient.coef <- coef(mem.fit)$PtID
+
+factor.names <- names(patient.coef)[3:length(patient.coef)]
+names(patient.coef) <- c("intercept", "slope", factor.names)
+patient.coef$PtID <- rownames(patient.coef)
+
+test <- merge(subset(data, year >= 1.5), patient.coef, by = "PtID")
+
+test$fvc.hat <- with(test, {
+    intercept + slope * year +
+        ifelse(strFemale == 0, 0.0, strFemale1) + 
+        ifelse(strRaceId1 == 0, 0.0, eval(as.name(paste0("strRaceId1", strRaceId1)))) +
+        ifelse(aca == 0, 0.0, aca1) +
+        ifelse(topo == 0, 0.0, topo1) +
+        ifelse(rnp == 0, 0.0, rnp1) +
+        ifelse(pol3 == 0, 0.0, pol31)
+})
+
+test$resid <- test$fvc.hat - test$fvc
+mean(test$resid ** 2)
+```
+
+Plot the residuals for the test cases.
+
+```{r}
+p <- ggplot(test, aes(x = year, y = resid / fvc.sd))
+p + geom_point(alpha = 0.3) + geom_smooth()
+```
+
+Plot patients with high MSE.
+
+```{r}
+PlotExtremes(data, test, extreme = "high", k = 5)
+```
+
+Plot patients with low MSE.
+
+```{r}
+PlotExtremes(data, test, extreme = "low", k = 5)
+```

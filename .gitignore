@@ -1,0 +1,8 @@
+*.md
+*.html
+*figure/
+*cache/
+data/
+*.DS_Store
+*.Rhistory
+*.\#*

@@ -1,0 +1,79 @@
+Mixed Effects Prediction 2
+==========================
+
+```{r results="hide"}
+opts_chunk$set(fig.align="center", tidy=FALSE)
+library(ggplot2)
+library(lme4)
+library(plyr)
+
+source("../../R/read_data.R")
+source("../../R/plot_results.R")
+```
+
+Only use year, gender, and race to predict for now.
+
+```{r}
+data <- ReadData("../../data/fvc.5.visits.csv")
+```
+
+Fit a simple mixed effects model using the first 1.5 years of data.
+
+```{r}
+train <- subset(data, year < 1.5)
+mem.fit <- lmer(fvc ~ year + strFemale + strRaceId1 + (1 + year|PtID),
+                data = train)
+print(mem.fit)
+```
+
+Check how well the model fits the training data. The residuals don't seem to have any systematic bias, so the model fits the first 1.5 years of data relatively well.
+
+```{r fig.align="center"}
+residuals <- data.frame(year = train$year,
+                        fvc.sd = train$fvc.sd,
+                        residual = resid(mem.fit))
+
+p <- ggplot(residuals, aes(x = year, y = residual / fvc.sd))
+p + geom_point(alpha = 0.3) + geom_smooth()
+```
+
+Predict the rest of the data for each patient using the fixed and random effects fit above.
+
+```{r}
+patient.coef <- coef(mem.fit)$PtID
+
+factor.names <- names(patient.coef)[3:length(patient.coef)]
+names(patient.coef) <- c("intercept", "slope", factor.names)
+patient.coef$PtID <- rownames(patient.coef)
+
+test <- merge(subset(data, year >= 1.5), patient.coef, by = "PtID")
+
+test$fvc.hat <- with(test, {
+    intercept + slope * year +
+        ifelse(strFemale == 0, 0.0, strFemale1) +
+        ifelse(strRaceId1 == 0, 0.0, eval(as.name(paste0("strRaceId1", strRaceId1))))
+})
+
+test$resid <- test$fvc.hat - test$fvc
+mean(test$resid ** 2)
+```
+
+Plot the predicted residuals.
+
+```{r}
+p <- ggplot(test, aes(x = year, y = resid / fvc.sd))
+p + geom_point(alpha = 0.3) + geom_smooth()
+```
+
+Plot the patients with high MSE.
+
+```{r}
+source("../../R/plot_results.R")
+PlotExtremes(data, test, extreme = "high", k = 5)
+```
+
+Plot the patients with low MSE.
+
+```{r}
+PlotExtremes(data, test, extreme = "low", k = 5)
+```

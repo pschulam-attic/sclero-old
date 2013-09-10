@@ -1,0 +1,143 @@
+Mixed-kNN Comparison
+====================
+
+```{r echo=FALSE, results="hide"}
+opts_chunk$set(tidy = FALSE)
+library(ggplot2)
+
+for (fn in dir("../../R/", full.names = TRUE)) source(fn)
+
+data <- ReadData("../../data/train.csv")
+train <- subset(data, year < 1.5)
+train.pids <- unique(train[["PtID"]])
+test <- subset(data, year >= 1.5 & PtID %in% train.pids)
+```
+
+First, fit the mixed effects predictor model.
+
+```{r mem, cache=TRUE}
+mem.model <- MixedModelPredictor(train)
+mem.results <- predict(mem.model, test)
+```
+
+Fit the kNN predictor model.
+
+```{r knn, cache=TRUE}
+knn.model <- KnnPredictor(train, k = 5)
+knn.results <- predict(knn.model, test)
+```
+
+Performance
+-----------
+
+Compute the error measurements.
+
+```{r}
+if (nrow(mem.results) != nrow(knn.results))
+    stop("Different number of predictions")
+
+mem.errors <- ddply(mem.results, .(PtID),
+                    summarize, norm.mse = mean(((fvc.hat - fvc) / fvc.sd) ^ 2))
+
+knn.errors <- ddply(knn.results, .(PtID),
+                    summarize, norm.mse = mean(((fvc.hat - fvc) / fvc.sd) ^ 2))
+
+```
+
+Plot the mean errors.
+
+```{r}
+mem.errors[["method"]] <- "mem"
+knn.errors[["method"]] <- "knn"
+errors <- rbind(mem.errors, knn.errors)
+
+summary(subset(errors, method == "mem")[["norm.mse"]])
+summary(subset(errors, method == "knn")[["norm.mse"]])
+
+p <- ggplot(errors, aes(x = norm.mse))
+p + geom_histogram() + facet_wrap(~ method)
+```
+
+Plot the errors for predictions less than 4.5 years from baseline.
+
+```{r}
+mem.short.errors <- ddply(subset(mem.results, year < 4.5), .(PtID),
+                          summarize, norm.mse = mean(((fvc.hat - fvc) / fvc.sd) ^ 2))
+
+knn.short.errors <- ddply(subset(knn.results, year < 4.5), .(PtID),
+                          summarize, norm.mse = mean(((fvc.hat - fvc) / fvc.sd) ^ 2))
+
+mem.short.errors[["method"]] <- "mem"
+knn.short.errors[["method"]] <- "knn"
+short.errors <- rbind(mem.short.errors, knn.short.errors)
+
+summary(subset(short.errors, method == "mem")[["norm.mse"]])
+summary(subset(short.errors, method == "knn")[["norm.mse"]])
+
+p <- ggplot(short.errors, aes(x = norm.mse))
+p + geom_histogram() + facet_wrap(~ method)
+```
+
+Analysis (mem)
+--------------
+
+Examine some patients who have large norm.mse under the mixed effects model.
+
+```{r}
+patients <- arrange(mem.errors, desc(norm.mse))[1:5, ]
+print(patients)
+
+patient.data <- subset(data, PtID %in% patients[["PtID"]])
+patient.coef <- subset(coef(mem.model), PtID %in% patients[["PtID"]])
+
+p <- ggplot(patient.data, aes(x = year, y = fvc, color = PtID))
+p + geom_point() +
+    geom_abline(aes(intercept = intercept, slope = slope, color = PtID),
+                patient.coef)
+```
+
+For comparison, produce a similar plot for patients who are predicted well.
+
+```{r}
+patients <- arrange(mem.errors, norm.mse)[1:5, ]
+print(patients)
+
+patient.data <- subset(data, PtID %in% patients[["PtID"]])
+patient.coef <- subset(coef(mem.model), PtID %in% patients[["PtID"]])
+
+p <- ggplot(patient.data, aes(x = year, y = fvc, color = PtID))
+p + geom_point() +
+    geom_abline(aes(intercept = intercept, slope = slope, color = PtID),
+                patient.coef)
+```
+
+Analysis (knn)
+--------------
+
+Examine patients who have large norm.mse under k-NN.
+
+```{r}
+patients <- arrange(knn.errors, desc(norm.mse))[1:5, ]
+print(patients)
+
+patient.data <- subset(data, PtID %in% patients[["PtID"]])
+patient.pred <- subset(knn.results, PtID %in% patients[["PtID"]])
+
+ggplot() +
+    geom_point(aes(x = year, y = fvc, color = PtID, shape = factor("true")), patient.data) +
+    geom_point(aes(x = year, y = fvc.hat, color = PtID, shape = factor("predicted")), patient.pred)
+```
+
+Similar plot for patients who are predicted well.
+
+```{r}
+patients <- arrange(knn.errors, norm.mse)[1:5, ]
+print(patients)
+
+patient.data <- subset(data, PtID %in% patients[["PtID"]])
+patient.pred <- subset(knn.results, PtID %in% patients[["PtID"]])
+
+ggplot() +
+    geom_point(aes(x = year, y = fvc, color = PtID, shape = factor("true")), patient.data) +
+    geom_point(aes(x = year, y = fvc.hat, color = PtID, shape = factor("predicted")), patient.pred)
+```

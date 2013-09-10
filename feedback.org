@@ -1,0 +1,23 @@
+* Suchi
+
+** September 10, 2013
+
+*** DONE Plot patient curves with large norm.mse
+
+*** DONE Plot mem and knn curves for low-scoring patients.
+
+Plot some others as well.
+
+*** TODO Run mem and knn experiments on DLCO
+
+*** TODO Plot DLCO slope vs FVC slope
+
+*** TODO Use antibody status for knn
+
+E.g. restrict neighbors to same antibody.
+
+*** TODO Investigate interpolation quality
+
+For this we can try to look at some patients with high performance and
+low performance and plot the interpolated curves of their nearest
+neighbors against their own.
