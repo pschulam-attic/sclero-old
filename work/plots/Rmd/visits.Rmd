@@ -1,0 +1,30 @@
+Patient Visits
+==============
+
+```{r}
+opts_chunk$set(message = FALSE, warning = FALSE)
+
+patient.filename <- "../../../data/sclerodata/tPtData.csv"
+pft.filename <- "../../../data/sclerodata/tPFT.csv"
+visit.filename <- "../../../data/sclerodata/tVisit.csv"
+```
+
+```{r}
+source("../lab_since_first_seen.R")
+main(patient.filename, pft.filename)
+```
+
+```{r}
+source("../lab_since_diagnosis.R")
+main(patient.filename, pft.filename)
+```
+
+```{r}
+source("../clinic_since_first_seen.R")
+main(patient.filename, visit.filename)
+```
+
+```{r}
+source("../clinic_since_diagnosis.R")
+main(patient.filename, visit.filename)
+```

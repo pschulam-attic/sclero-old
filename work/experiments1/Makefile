@@ -6,4 +6,10 @@ all: $(htmlfiles)
 %.html: %.Rmd
 	htmlknitr $<
 
-.PHONY: all
+clean:
+	rm -f *.md *.html
+
+clobber:
+	rm -rf cache/ figure/
+
+.PHONY: all clean clobber

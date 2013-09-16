@@ -61,6 +61,15 @@ KnnPredictor <- function(train, k) {
     structure(list(data=data, k=k), class = "KnnPredictor")
 }
 
+GetNearest <- function(patient, others, k) {
+    SimilarityTo <- function(df) ComputePatientDist(patient, df)
+
+    distances <- ddply(others, .(PtID), SimilarityTo)
+    k.nearest <- arrange(distances, distance)[["PtID"]][1:k]
+
+    k.nearest
+}
+
 PredictPatient <- function(df, train, test, k) {
     pid <- df[["PtID"]][1]
     
@@ -75,8 +84,7 @@ PredictPatient <- function(df, train, test, k) {
     k.nearest.data <- subset(test, PtID %in% k.nearest)
     k.nearest.data <- k.nearest.data[, setdiff(names(k.nearest.data), "fvc.hat")]
     
-    quarterly.predictions <- ddply(k.nearest.data, .(quarter),
-                                   summarize, fvc.hat = mean(fvc))
+    quarterly.predictions <- ddply(k.nearest.data, .(quarter), summarize, fvc.hat = mean(fvc))
     quarterly.predictions <- quarterly.predictions[, c("quarter", "fvc.hat")]
 
     last.prediction <- arrange(quarterly.predictions, desc(quarter))[["fvc.hat"]][1]
@@ -107,3 +115,14 @@ predict.KnnPredictor <- function(model, test) {
 
     arrange(test, PtID, year)
 }
+
+coef.KnnPredictor <- function(model, pid) {
+    train <- model$data
+    k <- model$k
+
+    patient <- subset(train, PtID == pid)
+    others <- subset(train, PtID != pid)
+
+    GetNearest(patient, others, k)
+}
+

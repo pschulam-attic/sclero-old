@@ -1,0 +1,113 @@
+Measurements
+============
+
+```{r}
+opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, dev = "svg")
+
+visit.filename <- "../../../data/sclerodata/tVisit.csv"
+pft.filename <- "../../../data/sclerodata/tPFT.csv"
+```
+
+Consecutive Measurement Variation
+---------------------------------
+
+The following four plots show the average difference between
+measurements that are taken within some number of years of one
+another. The title of each plot displays which measurement is being
+shown. The number of years is swept from 0.5 to 3 years by half year
+steps.
+
+**Takeaway**: At 1.5, 2.0, 2.5, and 3.0 year thresholds, the histograms
+ are slightly skewed to the left. I think that this reflects the
+ population-level downward trend in the data. With this in mind, I
+ think that the true variability of each of the types of measurements
+ falls within the range seen in the 0.5 and 1 year threshold plots.
+
+```{r}
+source("../lab_var_sequential_diff.R")
+```
+
+```{r fvc-variation}
+main(pft.filename, "FVC.Pre")
+```
+
+```{r perc-fvc-variation}
+main(pft.filename, "perc.FVC.of.predicted")
+```
+
+```{r dlco-variation}
+main(pft.filename, "DLCO")
+```
+
+```{r perc-dlco-variation}
+main(pft.filename, "perc.DLCO.of.predicted")
+```
+
+Severity Crossplots
+-------------------
+
+Each of the lab and clinical measurements captures some aspect of the
+disease's severity for a patient. We are interested in understanding
+the extent to which these different measurements are correlated or
+uncorrelated. For example, we want to know whether a low GI severity
+score correlates with a low FVC measurement.
+
+```{r}
+source("../severity_crossplot.R")
+sev.data <- main(visit.filename, pft.filename)
+```
+
+This figure shows the interactions between categorical severity
+scores, which are recorded during clinical visits.
+
+The first thing to note is that the skin severity score can increase
+without the Raynaud's severity score increasing. Raynaud's measures
+the condition of the skin on a patient's digits, so it makes sense
+that the skin score severity (which measures the condition of the skin
+across the patient's entire body) can become worse without RP
+increasing in severity as well.
+
+This also seems to be the case for GI severity, since it seems that
+the GI score can become quite severe while the RP score remains at 1
+or 2.
+
+It is interesting, though, that skin severity and GI severity do not
+seem to be correlated. The top right subplot shows that the number of
+patients who have both high skin and high GI scores is relatively
+small.
+
+```{r clinic-var-cross}
+plot_categorical(sev.data)
+```
+
+This plot does not demonstrate anything too surprising. We see that
+DLCO and FVC.Pre correlated.
+
+```{r lab-var-cross}
+plot_continuous(sev.data)
+```
+
+This plot summarizes the interactions between FVC and the 3 clinical
+measurements. The top three subplots on the right are the most
+important, and show the distribution over FVC severity for each value
+of the 3 clinical measurements. It seems that both skin severity and
+GI severity are correlated with a decrease in FVC. RP severity, on the
+other hand, does not seem to have as strong of a correlation. Although
+patients with an RP severity score of 0 have better FVCs than patients
+with a score of 1, 2, 3, or 4, the severity of FVC does not seem to
+get worst as RP becomes more severe.
+
+```{r fvc-clinic-cross}
+plot_combo_fvc(sev.data)
+```
+
+DLCO interacts with skin severity and GI severity as FVC does, but
+there seems to be a slightly stronger correlation with RP
+severity. Although DLCO and FVC are correlated in general, there are
+some outliers. I'd like to look into whether there is an overlap with
+these outliers and the patients who have a lower DLCO and a higher RP
+severity score.
+
+```{r dlco-clinic-cross}
+plot_combo_dlco(sev.data)
+```

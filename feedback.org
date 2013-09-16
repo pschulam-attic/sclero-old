@@ -3,7 +3,6 @@
 ** September 10, 2013
 
 *** DONE Plot patient curves with large norm.mse
-
 *** DONE Plot mem and knn curves for low-scoring patients.
 
 Plot some others as well.
@@ -21,3 +20,14 @@ E.g. restrict neighbors to same antibody.
 For this we can try to look at some patients with high performance and
 low performance and plot the interpolated curves of their nearest
 neighbors against their own.
+
+*** Notes from afternoon meeting
+
+Once the data has been deidentified, we want to start thinking about
+this idea of an uncertainty interval around our predictions. With that
+mechanism in place, we can start to assess how good our predictions
+are at various confidence levels. E.g. if we are very uncertain about
+prediction, we may not want to discount its contribution to the our
+model's penalty.
+
+

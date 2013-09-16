@@ -1,2 +1,149 @@
-* September 10, 2010
+* September 10, 2013
 
+I've compared the k-NN and mixed effects model approaches to
+predicting the longitudinal data. Using the distribution over
+per-patient normalized squared error as a metric, the mixed effects
+approach outperforms the k-NN approach.
+
+** Analysis
+
+The most difficult patients have spikes in their trajectories (up or
+down), or have a local trajectory for the first few visits that
+changes directions or becomes a less/more severe slope.
+
+** Scratch
+
+Think about what Suchi has commented on and what questions she's asked
+when we've presented results. How can I anticipate such questions and
+answer them myself. Answering this question will make our meetings
+more productive, and also help me to move forward efficiently by
+criticizing my own work.
+
+She scrutinizes graphs, and asks very specific questions about why a
+particular line or point exists. Usually the instances that she points
+out are surprising and don't make sense in the context of the model
+that was fit. Can we find these cases on our own? Analyze each element
+of a graphic, and make sure that you can reason about how it was
+generated. Does this reasoning make sense? If not, then we may need to
+produce additional plots or print out additional information from the
+experiment.
+
+She's also very good at quickly outlining a story and framing a set of
+experiments within that story. For example, when I told her about my
+experiments with k-NN and mixed effects models for predicting patient
+measurements, she quickly determined a metric that could gauge the
+performance of the approaches and described a suite of experiments
+that could be used along with the metric to get some idea of which
+technique was best in which situations (k-NN and mixed effects for
+predicting FVC and DLCO---four cases total).
+
+* September 11, 2013
+
+** Scratch
+
+Discussed yesterday the possibility of incorporating uncertainty into
+our estimates to assess how much we should trust our
+predictions. I.e. if we don't have much data supporting a prediction
+for a patient, then we would like to make sure that our model conveys
+that fact.
+
+Reading through the ARM book (Gelman and Hill), Chapter 12.4
+demonstrates how to get the standard errors for estimated coefficients
+using lmer (from the lme4 R package). Chapter 12.8 describes making
+predictions for new data from an existing group and new data from a
+new group, along with techniques for simulating from the predictive
+distribution to assess how uncertain the prediction is.
+
+For our model, there are two levels of uncertainty. The first is
+uncertainty in the parameter estimates, which is a result of having
+too little data. Second, there is uncertainty in the predictions,
+which is the standard deviation of the noise in the simplest case
+where all measurements are assumed to be iid.
+
+For the time being, let's assume that we have perfect parameter
+estimates. Then the uncertainty of our model is entirely in new
+measurement prediction. If we assume that all errors within and across
+patients are iid, then uncertainty is constant and most likely
+specified as an assumption prior to fitting the model. We know,
+however, that longitudinal measurements are correlated, and so the
+uncertainty information produced by our model should reflect the level
+of information that we have from a patient's previous measurements.
+
+** Data Import
+
+Importing data from Access DB tables. Identifying patient info. and
+data of interest are nicely decoupled by patient ID. Exporting the
+following tables to Excel sheets:
+
+    - tBAL [Bronchoalveolar Lavage Data]
+    - tblSerum_Number [] (*NOTE* this contained first and last name, I deleted these columns after export.)
+    - tECHO [ECHO Data]
+    - tHAQ [Health Assessment Questionnaire data]
+    - tMeds [Medications data]
+    - tPFT [Pulmonary Function data]
+    - tPtData [Patient Demographic data] (*NOTE* this does not containing identifying information.)
+    - tRightHeartCath [Right heart cath data]
+    - tSera [Serologic data]
+    - tSkinScore [Skin Score data]
+    - tVisit [Patient Data by Visit]
+
+tPtAddress contains most (if not all) of the identifying information,
+so this table was excluded from the extraction. There are 15 tables
+total in the DB provided. Of those 15:
+
+    - CVLabs seems to be an incomplete table that does not contain any
+      relevant information.
+    - iCancerHistology maps a score to a histology string.
+    - iCancerSite maps a score to a cancer site.
+
+Since iCancerHistology and iCancerSite contain no identifying
+information, we downloaded those tables to make sure that we have all
+relevant information for our model. This gives us a total of 13
+tables, each downloaded as a separate Excel sheet into
+the *scloredata* directory.
+
+** De-identification
+
+    - tPtData
+        - DOB (B)
+	- DateFirstSeen (M)
+	- DateLastSeen (N)
+	- DateDiagnosis (T)
+	- Date1stSymptom (V)
+	- DateOnRP (Y)
+	- DateDied (CH)
+
+*** Questions
+
+Do we need to remove DOB? It's not removed in the data I was given earlier. 
+* September 12, 2013
+
+** Data
+
+*** Pulmonary Function Test
+
+**** Spirometry
+
+The FVC.Pre and FEV1.Pre variables are the measured/observed values
+for the patient (pre-exercise/pre-bronchodilator).
+
+FVC.predicted and FEV1.predicted are predicted values based on the
+patient's age, height, weight, etc.
+
+perc.FVC.of.predicted and perc.FEV1.of.predicted is the ratio of the
+measured values to the predicted values.
+
+Finally, FEV1FVC.predicted is the ratio of the predicted FEV1 and
+FVC. perc.FEV1FVC.of.predicted is the ratio of the observed ratio to
+the predicted ratio.
+
+**** Diffusing Capacity
+
+DLCO is the measured/observed value of the diffusing capacity (the
+extent to which oxygen passes from the air sacs of the lungs into the
+bloodstream.
+
+DLCO.predicted is the value predicted using the patient's age, height,
+weight, etc.
+
+perc.DLCO.of.predicted is the ratio of the measured to the predicted.

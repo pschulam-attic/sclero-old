@@ -1,5 +1,5 @@
-Mixed-kNN Comparison
-====================
+Mixed-kNN Comparison (fvc)
+==========================
 
 ```{r echo=FALSE, results="hide"}
 opts_chunk$set(tidy = FALSE)
@@ -11,12 +11,14 @@ data <- ReadData("../../data/train.csv")
 train <- subset(data, year < 1.5)
 train.pids <- unique(train[["PtID"]])
 test <- subset(data, year >= 1.5 & PtID %in% train.pids)
+
+num.train.visits <- ddply(data, .(PtID), summarize, nvisits = sum(year < 1.5))
 ```
 
 First, fit the mixed effects predictor model.
 
 ```{r mem, cache=TRUE}
-mem.model <- MixedModelPredictor(train)
+mem.model <- MixedModelPredictor(train, "year", "fvc")
 mem.results <- predict(mem.model, test)
 ```
 
@@ -54,7 +56,7 @@ errors <- rbind(mem.errors, knn.errors)
 summary(subset(errors, method == "mem")[["norm.mse"]])
 summary(subset(errors, method == "knn")[["norm.mse"]])
 
-p <- ggplot(errors, aes(x = norm.mse))
+p <- ggplot(subset(errors, norm.mse < 2), aes(x = norm.mse))
 p + geom_histogram() + facet_wrap(~ method)
 ```
 
@@ -78,22 +80,71 @@ p <- ggplot(short.errors, aes(x = norm.mse))
 p + geom_histogram() + facet_wrap(~ method)
 ```
 
+Plot the errors excluding patients who have less than 2 training visits.
+
+```{r}
+at.least.two <- unique(subset(num.train.visits, nvisits >= 2)[["PtID"]])
+
+mem.e <- subset(mem.errors, PtID %in% at.least.two)
+mem.e[["method"]] <- "mem"
+
+summary(mem.e[["norm.mse"]])
+
+knn.e <- subset(knn.errors, PtID %in% at.least.two)
+knn.e[["method"]] <- "knn"
+
+summary(knn.e[["norm.mse"]])
+
+pruned.errors <- rbind(mem.e, knn.e)
+
+p <- ggplot(short.errors, aes(x = norm.mse))
+p + geom_histogram() + facet_wrap(~ method)
+```
+
 Analysis (mem)
 --------------
 
 Examine some patients who have large norm.mse under the mixed effects model.
 
 ```{r}
-patients <- arrange(mem.errors, desc(norm.mse))[1:5, ]
+patients <- arrange(subset(mem.errors, norm.mse < 2), desc(norm.mse))[1:5, ]
 print(patients)
 
 patient.data <- subset(data, PtID %in% patients[["PtID"]])
 patient.coef <- subset(coef(mem.model), PtID %in% patients[["PtID"]])
+patient.knn.pred <- subset(knn.results, PtID %in% patients[["PtID"]])
 
-p <- ggplot(patient.data, aes(x = year, y = fvc, color = PtID))
-p + geom_point() +
+p <- ggplot(patient.data, aes(x = year, y = fvc, color = PtID, shape = factor("true")))
+p + geom_point(size = 2) +
+    geom_point(aes(x = year, y = fvc.hat, color = PtID, size = 2, shape = factor("knn")), patient.knn.pred) +
     geom_abline(aes(intercept = intercept, slope = slope, color = PtID),
                 patient.coef)
+```
+
+For the five patients we've examined above, plot their nearest neighbors.
+
+```{r}
+patient.ids <- unique(patients[["PtID"]])
+
+PlotNeighbors <- function(pid) {
+    patient.data <- subset(data, PtID == pid)
+    
+    k.nearest <- coef(knn.model, pid)
+    print(k.nearest)
+    k.nearest.data <- subset(data, PtID %in% k.nearest)
+
+    stopifnot(nrow(k.nearest.data) > 0)
+
+    ggplot(patient.data) +
+        geom_line(aes(x = year, y = fvc, color = factor(PtID))) +
+        geom_point(aes(x = year, y = fvc, color = factor(PtID)), data = k.nearest.data)
+}
+
+PlotNeighbors(patient.ids[1])
+PlotNeighbors(patient.ids[2])
+PlotNeighbors(patient.ids[3])
+PlotNeighbors(patient.ids[4])
+PlotNeighbors(patient.ids[5])
 ```
 
 For comparison, produce a similar plot for patients who are predicted well.
@@ -141,3 +192,6 @@ ggplot() +
     geom_point(aes(x = year, y = fvc, color = PtID, shape = factor("true")), patient.data) +
     geom_point(aes(x = year, y = fvc.hat, color = PtID, shape = factor("predicted")), patient.pred)
 ```
+
+Mixed-kNN Comparison (dlco)
+===========================
