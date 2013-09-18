@@ -4,8 +4,8 @@ Measurements
 ```{r}
 opts_chunk$set(warning = FALSE, message = FALSE, fig.width = 7, dev = "svg")
 
-visit.filename <- "../../../data/sclerodata/tVisit.csv"
-pft.filename <- "../../../data/sclerodata/tPFT.csv"
+visit.filename <- "../../../data/sclerodata/tVisit_dev.csv"
+pft.filename <- "../../../data/sclerodata/tPFT_dev.csv"
 ```
 
 Consecutive Measurement Variation
@@ -111,3 +111,9 @@ severity score.
 ```{r dlco-clinic-cross}
 plot_combo_dlco(sev.data)
 ```
+
+```{r both-clinic-cross}
+plot_combo(sev.data)
+```
+
+

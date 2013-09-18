@@ -14,7 +14,7 @@ main <- function(patient.filename, pft.filename) {
   patient.first.seen <- as.Date(patient.data[["DateDiagnosis"]])
   names(patient.first.seen) <- patient.data[["PtID"]]
 
-  pft.diff.data <- transform(pft.data, diff = Date - patient.first.seen[as.character(PtID)])
+  pft.diff.data <- transform(pft.data, diff = as.integer(Date - patient.first.seen[as.character(PtID)]))
 
 
   time.since <- c(0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0)
@@ -33,5 +33,6 @@ main <- function(patient.filename, pft.filename) {
   all.data <- do.call("rbind", lapply(time.since, get.patient.visits))
 
   library(ggplot2)
-  ggplot(all.data, aes(x = factor(n.visits))) + geom_bar() + facet_wrap(~ year, ncol = 1)
+  p <- ggplot(all.data, aes(x = factor(n.visits))) + labs(title = "FVC Measurements Since Diag.")
+  p + geom_bar() + facet_wrap(~ year, ncol = 1)
 }

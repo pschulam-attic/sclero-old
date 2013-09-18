@@ -33,5 +33,5 @@ main <- function(patient.filename, visit.filename) {
   all.data <- do.call("rbind", lapply(time.since, get.patient.visits))
 
   library(ggplot2)
-  ggplot(all.data, aes(x = factor(n.visits))) + geom_bar() + facet_wrap(~ year, ncol = 1)
+  ggplot(all.data, aes(x = factor(n.visits))) + geom_bar() + facet_wrap(~ year, ncol = 1) + labs(title = "Clinic Visits Since First Seen")
 }

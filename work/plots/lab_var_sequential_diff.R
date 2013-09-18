@@ -54,7 +54,8 @@ main <- function(pft.filename, var.name) {
 
   diff.data <- ddply(pft.data, ~ PtID, consecutive_diff, var.name)
 
-  thresholds <- c(0.5, 1.0, 1.5, 2.0, 2.5, 3.0)
+  # thresholds <- c(0.5, 1.0, 1.5, 2.0, 2.5, 3.0)
+  thresholds <- c(0.5)
 
   compute_thresh_data <- function(thresh) {
     thresh.data <- subset(diff.data, 0 < date.diff & date.diff < thresh * 365)

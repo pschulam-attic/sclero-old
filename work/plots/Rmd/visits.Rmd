@@ -2,29 +2,29 @@ Patient Visits
 ==============
 
 ```{r}
-opts_chunk$set(message = FALSE, warning = FALSE)
+opts_chunk$set(message = FALSE, warning = FALSE, dev = "svg")
 
-patient.filename <- "../../../data/sclerodata/tPtData.csv"
-pft.filename <- "../../../data/sclerodata/tPFT.csv"
-visit.filename <- "../../../data/sclerodata/tVisit.csv"
+patient.filename <- "../../../data/sclerodata/tPtData_dev.csv"
+pft.filename <- "../../../data/sclerodata/tPFT_dev.csv"
+visit.filename <- "../../../data/sclerodata/tVisit_dev.csv"
 ```
 
-```{r}
+```{r lab-since-first-seen}
 source("../lab_since_first_seen.R")
 main(patient.filename, pft.filename)
 ```
 
-```{r}
+```{r lab-since-diagnosis}
 source("../lab_since_diagnosis.R")
 main(patient.filename, pft.filename)
 ```
 
-```{r}
+```{r clinic-since-first-seen}
 source("../clinic_since_first_seen.R")
 main(patient.filename, visit.filename)
 ```
 
-```{r}
+```{r clinic-since-diagnosis}
 source("../clinic_since_diagnosis.R")
 main(patient.filename, visit.filename)
 ```

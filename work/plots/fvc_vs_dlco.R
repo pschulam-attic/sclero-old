@@ -9,7 +9,7 @@ comp_fvc_dlco_coef <- function(df) {
 }
 
 na_outliers <- function(x) {
-  q1.q3 <- quantile(x, c(0.25, 0.75))
+  q1.q3 <- quantile(x, c(0.25, 0.75), na.rm = TRUE)
   iqr <- diff(q1.q3)
 
   lb <- q1.q3[1] - 1.5 * iqr
@@ -22,7 +22,7 @@ na_outliers <- function(x) {
 
 library(plyr)
 
-data <- arrange(read.csv("../../data/train.csv", stringsAsFactors = FALSE), PtID, year)
+data <- arrange(read.csv("../../data/old/train.csv", stringsAsFactors = FALSE), PtID, year)
 data$PtID <- as.factor(data$PtID)
 
 has.missing.dlco <- ddply(data, ~ PtID, summarize, has.missing = any(is.na(dlco)))

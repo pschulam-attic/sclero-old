@@ -82,7 +82,7 @@ plot_categorical <- function(worst.data) {
 
 plot_continuous <- function(worst.data) {
   library(GGally)
-  worst.data <- na.omit(worst.data[, c(6, 8)])
+  worst.data <- na.omit(worst.data[, c(7, 9)])
   ggpairs(worst.data, axisLabels = "show", title = "Lab Variable Interactions",
           diag = list(continuous = "bar"),
           upper = list(continuous = "points"),
@@ -90,13 +90,25 @@ plot_continuous <- function(worst.data) {
           )
 }
 
+plot_combo <- function(worst.data) {
+  library(GGally)
+  worst.data <- na.omit(worst.data[, c(3, 4, 5, 7, 9)])
+  ggpairs(worst.data, axisLabels = "show",
+          title = "Clinical Var. Interaction with FVC/DLCO",
+          diag = list(continuous = "bar", discrete = "bar"),
+          upper = list(discrete = "ratio", combo = "facethist"),
+          lower = list(discrete = "blank", combo = "blank")
+          )
+}
+
+
 plot_combo_fvc <- function(worst.data) {
   library(GGally)
   worst.data <- na.omit(worst.data[, c(3, 4, 5, 6)])
   ggpairs(worst.data, axisLabels = "show",
           title = "Clinical Var. Interaction with FVC",
           diag = list(continuous = "bar", discrete = "bar"),
-          upper = list(discrete = "ratio", combo = "box"),
+          upper = list(discrete = "ratio", combo = "facethist"),
           lower = list(discrete = "blank", combo = "blank")
           )
 }
